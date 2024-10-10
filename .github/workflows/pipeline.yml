@@ -16,44 +16,44 @@ jobs:
        # path to our profile                   
       PROFILE: my_nginx
 
-  steps:
-    # updating all dependencies is always a good start
-    - name: PREP - Update runner              
-      run: sudo apt-get update
+    steps:
+      # updating all dependencies is always a good start
+      - name: PREP - Update runner              
+        run: sudo apt-get update
 
-    - name: PREP - Install InSpec executable 
-      run: curl https://omnitruck.chef.io/install.sh | sudo bash -s -- -P inspec -v 5
+      - name: PREP - Install InSpec executable 
+        run: curl https://omnitruck.chef.io/install.sh | sudo bash -s -- -P inspec -v 5
 
-    - name: PREP - Install SAF CLI
-      run: npm install -g @mitre/saf
+      - name: PREP - Install SAF CLI
+        run: npm install -g @mitre/saf
 
-    # checkout the profile, because that's where our profile is!
-    - name: PREP - Check out this repository  
-      uses: actions/checkout@v3
+      # checkout the profile, because that's where our profile is!
+      - name: PREP - Check out this repository  
+        uses: actions/checkout@v3
 
-    # double-check that we don't have any serious issues in our profile code
-    - name: LINT - Run InSpec Check           
-      run: inspec check $PROFILE
+      # double-check that we don't have any serious issues in our profile code
+      - name: LINT - Run InSpec Check           
+        run: inspec check $PROFILE
 
-    # launch a container as the test target
-    - name: DEPLOY - Run a Docker container from nginx
-      run: docker run -dit --name nginx nginx:latest
+      # launch a container as the test target
+      - name: DEPLOY - Run a Docker container from nginx
+        run: docker run -dit --name nginx nginx:latest
 
-    # install dependencies on the container so that hardening will work
-    - name: DEPLOY - Install Python for our nginx container
-      run: |
-        docker exec nginx apt-get update -y
-        docker exec nginx apt-get install -y python3
+      # install dependencies on the container so that hardening will work
+      - name: DEPLOY - Install Python for our nginx container
+        run: |
+          docker exec nginx apt-get update -y
+          docker exec nginx apt-get install -y python3
 
-    # fetch the hardening role and requirements
-    - name: HARDEN - Fetch Ansible role
-      run: |
-        git clone --branch docker https://github.com/mitre/ansible-nginx-stigready-hardening.git || true
-        chmod 755 ansible-nginx-stigready-hardening
+      # fetch the hardening role and requirements
+      - name: HARDEN - Fetch Ansible role
+        run: |
+          git clone --branch docker https://github.com/mitre/ansible-nginx-stigready-hardening.git || true
+          chmod 755 ansible-nginx-stigready-hardening
 
-    - name: HARDEN - Fetch Ansible requirements
-      run: ansible-galaxy install -r ansible-nginx-stigready-hardening/requirements.yml
+      - name: HARDEN - Fetch Ansible requirements
+        run: ansible-galaxy install -r ansible-nginx-stigready-hardening/requirements.yml
 
-    # harden!
-    - name: HARDEN - Run Ansible hardening
-      run: ansible-playbook --inventory=nginx, --connection=docker ansible-nginx-stigready-hardening/hardening-playbook.yml
+      # harden!
+      - name: HARDEN - Run Ansible hardening
+        run: ansible-playbook --inventory=nginx, --connection=docker ansible-nginx-stigready-hardening/hardening-playbook.yml
