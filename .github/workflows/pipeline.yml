@@ -11,9 +11,9 @@ jobs:
     name: Gold Image NGINX
     runs-on: ubuntu-20.04
     env:
-       # so that we can use InSpec without manually accepting the license
+      # so that we can use InSpec without manually accepting the license
       CHEF_LICENSE: accept  
-       # path to our profile                   
+      # path to our profile                   
       PROFILE: my_nginx
 
     steps:
@@ -57,3 +57,23 @@ jobs:
       # harden!
       - name: HARDEN - Run Ansible hardening
         run: ansible-playbook --inventory=nginx, --connection=docker ansible-nginx-stigready-hardening/hardening-playbook.yml
+
+      - name: VALIDATE - Run InSpec
+        # we dont want to stop if our InSpec run finds failures, we want to continue and record the result
+        continue-on-error: true                
+        run: |
+          inspec exec $PROFILE \
+          --input-file=$PROFILE/inputs-linux.yml \
+          --target docker://nginx \
+          --reporter cli json:results/pipeline_run.json
+
+      # attest
+      - name: VALIDATE - Apply an Attestation
+        run: |
+          saf attest apply -i results/pipeline_run.json attestation.json -o results/pipeline_run_attested.json
+
+      # save our results to the pipeline artifacts, even if the InSpec run found failing tests
+      - name: VALIDATE - Save Test Result JSON  
+        uses: actions/upload-artifact@v3
+        with:
+          path: results/pipeline_run_attested.json
