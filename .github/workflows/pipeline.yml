@@ -4,7 +4,7 @@ name: Demo Security Validation Gold Image Pipeline
 on:                                             
   push:
     # trigger this action on any push to main branch
-    branches: [ main, pipelineBranch ]                
+    branches: [ main, saf-day3 ]                
 
 jobs:
   gold-image:
